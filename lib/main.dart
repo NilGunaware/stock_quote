@@ -7,6 +7,7 @@ import 'services/stock_api_service.dart';
 import 'services/storage_service.dart';
 import 'viewmodels/stock_view_model.dart';
 import 'models/stock.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,15 +41,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Stock Quote',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-      ),
-      themeMode: ThemeMode.system,
+      theme: AppTheme.darkTheme,
       home: const MainScreen(),
       routes: {
         '/stock_detail': (context) => StockDetailScreen(
