@@ -92,9 +92,22 @@ class _SectorScreenState extends State<SectorScreen> {
                             final stock = stocks[index];
                             return StockListItem(
                               stock: stock,
+                              isInWatchlist: viewModel.watchlist.any(
+                                (s) => s.symbol == stock.symbol,
+                              ),
+                              onWatchlistToggle: () {
+                                final isInWatchlist = viewModel.watchlist.any(
+                                  (s) => s.symbol == stock.symbol,
+                                );
+                                if (isInWatchlist) {
+                                  viewModel.removeFromWatchlist(stock);
+                                } else {
+                                  viewModel.addToWatchlist(stock);
+                                }
+                              },
                               onTap: () => Navigator.pushNamed(
                                 context,
-                                '/stock-detail',
+                                '/stock_detail',
                                 arguments: stock,
                               ),
                             );

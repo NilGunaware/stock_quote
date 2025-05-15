@@ -69,7 +69,7 @@ class WatchlistScreen extends StatelessWidget {
                     stock: stock,
                     onTap: () => Navigator.pushNamed(
                       context,
-                      '/stock-detail',
+                      '/stock_detail',
                       arguments: stock,
                     ),
                   ),

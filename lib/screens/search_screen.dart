@@ -82,11 +82,22 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: viewModel.searchResults.length,
                   itemBuilder: (context, index) {
                     final stock = viewModel.searchResults[index];
+                    final isInWatchlist = viewModel.watchlist.any(
+                      (s) => s.symbol == stock.symbol,
+                    );
                     return StockListItem(
                       stock: stock,
+                      isInWatchlist: isInWatchlist,
+                      onWatchlistToggle: () {
+                        if (isInWatchlist) {
+                          viewModel.removeFromWatchlist(stock);
+                        } else {
+                          viewModel.addToWatchlist(stock);
+                        }
+                      },
                       onTap: () => Navigator.pushNamed(
                         context,
-                        '/stock-detail',
+                        '/stock_detail',
                         arguments: stock,
                       ),
                     );

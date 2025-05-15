@@ -8,6 +8,11 @@ class StorageService {
 
   StorageService(this._prefs);
 
+  static Future<StorageService> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    return StorageService(prefs);
+  }
+
   Future<List<String>> getWatchlist() async {
     return _prefs.getStringList(_watchlistKey) ?? [];
   }

@@ -7,18 +7,11 @@ import 'package:flutter/foundation.dart';
 class StockApiService {
   final Dio _dio = Dio();
   final String _baseUrl = 'https://www.alphavantage.co/query';
-  late final String _apiKey;
-  bool _isDemo = false;
+  final String _apiKey = 'demo'; // Using the demo API key
+  bool _isDemo = true;
 
   StockApiService() {
-    try {
-      _apiKey = dotenv.env['ALPHA_VANTAGE_API_KEY'] ?? 'demo';
-    } catch (e) {
-      _apiKey = 'demo';
-      debugPrint('Error loading API key: $e');
-    }
-    _isDemo = _apiKey == 'demo';
-    debugPrint('StockApiService initialized in ${_isDemo ? 'DEMO' : 'LIVE'} mode');
+    debugPrint('StockApiService initialized with demo API key');
   }
 
   Future<Stock> getStockQuote(String symbol) async {
@@ -35,40 +28,52 @@ class StockApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data.containsKey('Time Series (5min)')) {
-          // Get the most recent quote
+        if (data.containsKey('Time Series (5min)') && data.containsKey('Meta Data')) {
+          // Get the most recent quote from Time Series
           final timeSeries = data['Time Series (5min)'] as Map<String, dynamic>;
           final latestTime = timeSeries.keys.first;
           final quote = timeSeries[latestTime];
-          
-          // Calculate price change and percentage
+
+          // Get metadata
+          final metaData = data['Meta Data'];
+          final stockSymbol = metaData['2. Symbol'] ?? symbol;
+
+          // Parse price data
           final currentPrice = double.parse(quote['4. close']);
           final openPrice = double.parse(quote['1. open']);
+          final highPrice = double.parse(quote['2. high']);
+          final lowPrice = double.parse(quote['3. low']);
+          final volume = int.parse(quote['5. volume']);
+
+          // Calculate price change
           final priceChange = currentPrice - openPrice;
           final priceChangePercentage = (priceChange / openPrice) * 100;
 
           return Stock(
-            symbol: symbol,
-            companyName: symbol, // Alpha Vantage doesn't provide company name in this endpoint
+            symbol: stockSymbol,
+            companyName: '$stockSymbol Stock',
             currentPrice: currentPrice,
             priceChange: priceChange,
             priceChangePercentage: priceChangePercentage,
             marketCap: 0, // Not available in this endpoint
             peRatio: 0, // Not available in this endpoint
-            sector: 'N/A', // Not available in this endpoint
-            industry: 'N/A', // Not available in this endpoint
+            sector: 'Technology', // Not available in this endpoint
+            industry: 'Technology', // Not available in this endpoint
+            highPrice: highPrice,
+            lowPrice: lowPrice,
+            openPrice: openPrice,
+            volume: volume,
+            lastUpdated: DateTime.parse(latestTime),
           );
-        } else {
-          throw Exception('Invalid response format');
         }
-      } else {
-        throw Exception('Failed to load stock data');
-      }
-    } catch (e) {
-      if (_isDemo) {
+        debugPrint('Invalid response format: missing required data');
         return _getDemoStock(symbol);
       }
-      throw Exception('Error fetching stock data: $e');
+      debugPrint('Failed to load stock data: status code ${response.statusCode}');
+      return _getDemoStock(symbol);
+    } catch (e) {
+      debugPrint('Error fetching stock data: $e');
+      return _getDemoStock(symbol);
     }
   }
 

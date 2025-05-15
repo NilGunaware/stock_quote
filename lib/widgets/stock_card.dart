@@ -25,7 +25,7 @@ class StockCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           // Navigate to detail view
-          Navigator.pushNamed(context, '/stock-detail', arguments: stock);
+          Navigator.pushNamed(context, '/stock_detail', arguments: stock);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),

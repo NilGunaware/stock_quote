@@ -4,11 +4,15 @@ import '../models/stock.dart';
 class StockListItem extends StatelessWidget {
   final Stock stock;
   final VoidCallback? onTap;
+  final bool isInWatchlist;
+  final VoidCallback? onWatchlistToggle;
 
   const StockListItem({
     Key? key,
     required this.stock,
     this.onTap,
+    this.isInWatchlist = false,
+    this.onWatchlistToggle,
   }) : super(key: key);
 
   @override
@@ -29,12 +33,26 @@ class StockListItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      stock.symbol,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            stock.symbol,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (onWatchlistToggle != null)
+                          IconButton(
+                            icon: Icon(
+                              isInWatchlist ? Icons.star : Icons.star_border,
+                              color: isInWatchlist ? Colors.amber : Colors.grey,
+                            ),
+                            onPressed: onWatchlistToggle,
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
