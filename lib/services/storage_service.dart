@@ -1,10 +1,10 @@
 import 'dart:convert';
- import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/stock.dart';
 
 class StorageService {
-  static const String _watchlistKey = 'watchlist';
   final SharedPreferences _prefs;
+  static const String _watchlistKey = 'watchlist';
 
   StorageService(this._prefs);
 
@@ -13,7 +13,7 @@ class StorageService {
   }
 
   Future<void> addToWatchlist(String symbol) async {
-    final List<String> watchlist = await getWatchlist();
+    final watchlist = await getWatchlist();
     if (!watchlist.contains(symbol)) {
       watchlist.add(symbol);
       await _prefs.setStringList(_watchlistKey, watchlist);
@@ -21,7 +21,7 @@ class StorageService {
   }
 
   Future<void> removeFromWatchlist(String symbol) async {
-    final List<String> watchlist = await getWatchlist();
+    final watchlist = await getWatchlist();
     watchlist.remove(symbol);
     await _prefs.setStringList(_watchlistKey, watchlist);
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/stock_detail_screen.dart';
 import 'services/stock_api_service.dart';
 import 'services/storage_service.dart';
@@ -66,19 +66,11 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        initialRoute: '/',
-        onGenerateRoute: (settings) {
-          if (settings.name == '/') {
-            return MaterialPageRoute(
-              builder: (_) => const HomeScreen(),
-            );
-          } else if (settings.name == '/stock-detail') {
-            final stock = settings.arguments as Stock;
-            return MaterialPageRoute(
-              builder: (_) => StockDetailScreen(stock: stock),
-            );
-          }
-          return null;
+        home: const MainScreen(),
+        routes: {
+          '/stock-detail': (context) => StockDetailScreen(
+            stock: ModalRoute.of(context)!.settings.arguments as Stock,
+          ),
         },
       ),
     );
