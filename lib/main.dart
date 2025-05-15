@@ -33,17 +33,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider(
+        Provider<StockApiService>(
           create: (_) => StockApiService(),
+          lazy: false,
         ),
-        Provider(
+        Provider<StorageService>(
           create: (_) => StorageService(prefs),
+          lazy: false,
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider2<StockApiService, StorageService, StockViewModel>(
           create: (context) => StockViewModel(
-            context.read<StockApiService>(),
-            context.read<StorageService>(),
+            Provider.of<StockApiService>(context, listen: false),
+            Provider.of<StorageService>(context, listen: false),
           ),
+          update: (context, stockService, storageService, previous) =>
+            previous ?? StockViewModel(stockService, storageService),
         ),
       ],
       child: MaterialApp(

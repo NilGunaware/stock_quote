@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/stock.dart';
+import 'package:flutter/foundation.dart';
 
 class StockApiService {
   final Dio _dio = Dio();
@@ -10,8 +11,14 @@ class StockApiService {
   bool _isDemo = false;
 
   StockApiService() {
-    _apiKey = dotenv.env['IEX_CLOUD_API_KEY'] ?? '';
+    try {
+      _apiKey = dotenv.env['IEX_CLOUD_API_KEY'] ?? '';
+    } catch (e) {
+      _apiKey = '';
+      debugPrint('Error loading API key: $e');
+    }
     _isDemo = _apiKey.isEmpty;
+    debugPrint('StockApiService initialized in ${_isDemo ? 'DEMO' : 'LIVE'} mode');
   }
 
   Future<Stock> getStockQuote(String symbol) async {
