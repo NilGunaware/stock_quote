@@ -15,9 +15,24 @@ class StockViewModel extends ChangeNotifier {
   bool _isLoading = false;
   Timer? _refreshTimer;
 
+  // Pagination properties
+  bool _isLoadingMore = false;
+  List<Stock> _allSearchResults = [];
+  static const int _pageSize = 10;
+  String _lastSearchQuery = '';
+
+  // Default stocks to show
+  final List<String> _defaultSymbols = [
+    'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'META',
+    'TSLA', 'NVDA', 'JPM', 'BAC', 'WMT',
+    'JNJ', 'PG', 'XOM', 'V', 'MA',
+    'DIS', 'NFLX', 'INTC', 'AMD', 'CSCO'
+  ];
+
   StockViewModel(this._stockApiService, this._storageService) {
     _loadWatchlist();
     startAutoRefresh();
+    loadAllStocks(); // Load all stocks when initialized
   }
 
   // Getters
@@ -25,6 +40,34 @@ class StockViewModel extends ChangeNotifier {
   List<Stock> get watchlist => _watchlist;
   String? get error => _error;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMoreResults => _searchResults.length < _allSearchResults.length;
+
+  // Load all default stocks
+  Future<void> loadAllStocks() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      List<Stock> allStocks = [];
+      for (String symbol in _defaultSymbols) {
+        try {
+          final stock = await _stockApiService.getStockQuote(symbol);
+          allStocks.add(stock);
+        } catch (e) {
+          debugPrint('Error loading stock $symbol: $e');
+        }
+      }
+
+      _allSearchResults = allStocks;
+      _searchResults = _allSearchResults.take(_pageSize).toList();
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
 
   void startAutoRefresh() {
     _refreshTimer?.cancel();
@@ -42,20 +85,48 @@ class StockViewModel extends ChangeNotifier {
   // Search functionality
   Future<void> searchStocks(String query) async {
     if (query.isEmpty) {
-      _searchResults = [];
-      notifyListeners();
+      loadAllStocks(); // Reset to show all stocks
       return;
+    }
+
+    if (query != _lastSearchQuery) {
+      _lastSearchQuery = query;
+      _allSearchResults = [];
+      _searchResults = [];
     }
 
     try {
       _setLoading(true);
       _clearError();
-      _searchResults = await _stockApiService.searchStocks(query);
+      _allSearchResults = await _stockApiService.searchStocks(query);
+      _searchResults = _allSearchResults.take(_pageSize).toList();
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> loadMoreResults() async {
+    if (!hasMoreResults || _isLoadingMore) return;
+
+    try {
+      _isLoadingMore = true;
+      notifyListeners();
+
+      await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+      
+      final currentLength = _searchResults.length;
+      final nextBatch = _allSearchResults
+          .skip(currentLength)
+          .take(_pageSize)
+          .toList();
+      
+      _searchResults.addAll(nextBatch);
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
     }
   }
 

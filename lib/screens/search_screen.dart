@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/stock_view_model.dart';
 import '../widgets/stock_list_item.dart';
+import '../widgets/stock_shimmer.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -12,38 +13,95 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _isSearching = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupScrollController();
+  }
+
+  void _setupScrollController() {
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        final viewModel = Provider.of<StockViewModel>(context, listen: false);
+        if (!viewModel.isLoadingMore && viewModel.hasMoreResults) {
+          viewModel.loadMoreResults();
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query, StockViewModel viewModel) {
-    if (query.isEmpty) {
-      setState(() => _isSearching = false);
-      return;
-    }
-    setState(() => _isSearching = true);
     viewModel.searchStocks(query);
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Search Stocks'),
+        backgroundColor: Colors.black,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Stocks',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'December ${DateTime.now().day}',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Consumer<StockViewModel>(
-              builder: (context, viewModel, child) => SearchBar(
+              builder: (context, viewModel, child) => TextField(
                 controller: _searchController,
-                hintText: 'Search by symbol or company name',
-                leading: const Icon(Icons.search),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Search stocks',
+                  hintStyle: TextStyle(color: Colors.grey[600]),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
                 onChanged: (query) => _onSearchChanged(query, viewModel),
               ),
             ),
@@ -51,16 +109,8 @@ class _SearchScreenState extends State<SearchScreen> {
           Expanded(
             child: Consumer<StockViewModel>(
               builder: (context, viewModel, child) {
-                if (!_isSearching) {
-                  return const Center(
-                    child: Text('Enter a symbol or company name to search'),
-                  );
-                }
-
                 if (viewModel.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const StockShimmer();
                 }
 
                 if (viewModel.error != null) {
@@ -73,35 +123,57 @@ class _SearchScreenState extends State<SearchScreen> {
                 }
 
                 if (viewModel.searchResults.isEmpty) {
-                  return const Center(
-                    child: Text('No results found'),
+                  return Center(
+                    child: Text(
+                      'No stocks found',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: viewModel.searchResults.length,
-                  itemBuilder: (context, index) {
-                    final stock = viewModel.searchResults[index];
-                    final isInWatchlist = viewModel.watchlist.any(
-                      (s) => s.symbol == stock.symbol,
-                    );
-                    return StockListItem(
-                      stock: stock,
-                      isInWatchlist: isInWatchlist,
-                      onWatchlistToggle: () {
-                        if (isInWatchlist) {
-                          viewModel.removeFromWatchlist(stock);
-                        } else {
-                          viewModel.addToWatchlist(stock);
+                return Stack(
+                  children: [
+                    ListView.builder(
+                      controller: _scrollController,
+                      itemCount: viewModel.searchResults.length + (viewModel.hasMoreResults ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= viewModel.searchResults.length) {
+                          return _buildLoadingIndicator();
                         }
+
+                        final stock = viewModel.searchResults[index];
+                        final isInWatchlist = viewModel.watchlist.any(
+                          (s) => s.symbol == stock.symbol,
+                        );
+                        return StockListItem(
+                          stock: stock,
+                          isInWatchlist: isInWatchlist,
+                          onWatchlistToggle: () {
+                            if (isInWatchlist) {
+                              viewModel.removeFromWatchlist(stock);
+                            } else {
+                              viewModel.addToWatchlist(stock);
+                            }
+                          },
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/stock_detail',
+                            arguments: stock,
+                          ),
+                        );
                       },
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/stock_detail',
-                        arguments: stock,
+                    ),
+                    if (viewModel.isLoadingMore)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          color: Colors.black.withOpacity(0.7),
+                          child: const StockShimmer(),
+                        ),
                       ),
-                    );
-                  },
+                  ],
                 );
               },
             ),
