@@ -19,6 +19,7 @@ class HeaderWidget extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          SizedBox(height: 5,),
           Text(
             viewModel.formattedDate,
             style: TextStyle(

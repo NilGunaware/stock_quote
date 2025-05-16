@@ -37,7 +37,7 @@ class _MainScreenState extends State<MainScreen> {
         onDestinationSelected: _onItemTapped,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.home),
             label: 'Stock',
           ),
           NavigationDestination(
