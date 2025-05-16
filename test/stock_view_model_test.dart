@@ -41,7 +41,7 @@ void main() {
     when(mockApiService.getStockQuote(testStock.symbol))
         .thenAnswer((_) async => testStock);
 
-    viewModel = StockViewModel(mockApiService, mockStorageService);
+    viewModel = StockViewModel(mockApiService );
   });
 
   group('StockViewModel Tests', () {
@@ -126,7 +126,6 @@ void main() {
       // Verify the results
       expect(viewModel.watchlist.isEmpty, isTrue);
       expect(viewModel.error, isNull);
-      verify(mockStorageService.removeFromWatchlist(testStock.symbol)).called(1);
     });
   });
 } 

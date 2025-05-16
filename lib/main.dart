@@ -15,27 +15,22 @@ import 'repositories/stock_repository.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize services
-  final storageService = await StorageService.initialize();
+    final storageService = await StorageService.initialize();
   final stockApiService = StockApiService();
   final dateService = DateService();
 
-  // Initialize repository
-  final stockRepository = StockRepository(stockApiService, storageService);
+   final stockRepository = StockRepository(stockApiService, storageService);
 
   runApp(
     MultiProvider(
       providers: [
-        // Services
         Provider<StorageService>(create: (_) => storageService),
         Provider<StockApiService>(create: (_) => stockApiService),
         Provider<DateService>(create: (_) => dateService),
         
-        // Repositories
-        Provider<StockRepository>(create: (_) => stockRepository),
+         Provider<StockRepository>(create: (_) => stockRepository),
         
-        // ViewModels
-        ChangeNotifierProvider(
+         ChangeNotifierProvider(
           create: (context) => StockViewModel(
             context.read<StockRepository>(),
           ),

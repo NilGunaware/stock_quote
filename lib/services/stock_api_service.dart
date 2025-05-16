@@ -51,12 +51,11 @@ class StockApiService {
         final data = response.data;
         print("Nil testing and ${data}");
          if (data is Map<String, dynamic> && data.containsKey('Error Message')) {
-          debugPrint('API Error: ${data['Error Message']}');
+          print('API Error: ${data['Error Message']}');
           return _getDemoStock(symbol);
         }
 
-        // Check for rate limit
-        if (data is Map<String, dynamic> && data.containsKey('Note')) {
+         if (data is Map<String, dynamic> && data.containsKey('Note')) {
           debugPrint('API Rate Limit: ${data['Note']}');
           return _getDemoStock(symbol);
         }
@@ -65,8 +64,7 @@ class StockApiService {
             data.containsKey('Time Series (5min)') && 
             data.containsKey('Meta Data')) {
           try {
-            // Get the most recent quote from Time Series
-            final timeSeries = data['Time Series (5min)'] as Map<String, dynamic>;
+             final timeSeries = data['Time Series (5min)'] as Map<String, dynamic>;
             if (timeSeries.isEmpty) {
               debugPrint('Empty time series data for symbol: $symbol');
               return _getDemoStock(symbol);
@@ -75,19 +73,16 @@ class StockApiService {
             final latestTime = timeSeries.keys.first;
             final quote = timeSeries[latestTime];
 
-            // Get metadata
-            final metaData = data['Meta Data'];
+             final metaData = data['Meta Data'];
             final stockSymbol = metaData['2. Symbol'] ?? symbol;
 
-            // Parse price data with null safety
-            final currentPrice = double.tryParse(quote['4. close'] ?? '') ?? 0.0;
+             final currentPrice = double.tryParse(quote['4. close'] ?? '') ?? 0.0;
             final openPrice = double.tryParse(quote['1. open'] ?? '') ?? 0.0;
             final highPrice = double.tryParse(quote['2. high'] ?? '') ?? 0.0;
             final lowPrice = double.tryParse(quote['3. low'] ?? '') ?? 0.0;
             final volume = int.tryParse(quote['5. volume'] ?? '') ?? 0;
 
-            // Calculate price change with null safety
-            final priceChange = currentPrice - openPrice;
+             final priceChange = currentPrice - openPrice;
             final priceChangePercentage = openPrice != 0 ? (priceChange / openPrice) * 100 : 0.0;
 
             return Stock(
@@ -123,9 +118,7 @@ class StockApiService {
   }
 
   Future<List<Stock>> getStocksByIndustry(String sector) async {
-    // Alpha Vantage doesn't have a direct endpoint for sector-based queries
-    // Returning demo data instead
-    return _getDemoStocksList(sector);
+     return _getDemoStocksList(sector);
   }
 
   Future<List<Stock>> searchStocks(String query) async {
@@ -163,9 +156,8 @@ class StockApiService {
       throw Exception('Error searching stocks: $e');
     }
   }
-
-  // Demo data methods
-  Stock _getDemoStock(String symbol) {
+//demo data
+   Stock _getDemoStock(String symbol) {
     final demoData = {
       'AAPL': ('Apple Inc.', 180.5, 2.5),
       'GOOGL': ('Alphabet Inc.', 140.2, -1.2),
