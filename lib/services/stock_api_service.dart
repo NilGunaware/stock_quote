@@ -121,53 +121,95 @@ class StockApiService {
 
   // Demo data methods
   Stock _getDemoStock(String symbol) {
+    final demoData = {
+      'AAPL': ('Apple Inc.', 180.5, 2.5),
+      'GOOGL': ('Alphabet Inc.', 140.2, -1.2),
+      'MSFT': ('Microsoft Corporation', 375.8, 3.2),
+      'AMZN': ('Amazon.com Inc.', 145.2, 1.8),
+      'META': ('Meta Platforms Inc.', 335.0, 4.5),
+      'TSLA': ('Tesla Inc.', 240.5, -2.1),
+      'NVDA': ('NVIDIA Corporation', 480.3, 5.2),
+      'JPM': ('JPMorgan Chase & Co.', 170.4, 1.1),
+      'BAC': ('Bank of America Corp.', 33.2, -0.5),
+      'WMT': ('Walmart Inc.', 160.8, 0.8),
+    };
+
+    final defaultData = (symbol, 100.0, 2.5);
+    final (companyName, price, change) = demoData[symbol] ?? defaultData;
+    final changePercent = (change / price) * 100;
+
     return Stock(
       symbol: symbol,
-      companyName: 'Demo Company',
-      currentPrice: 100.0,
-      priceChange: 2.5,
-      priceChangePercentage: 2.5,
-      marketCap: 1000000000,
+      companyName: companyName,
+      currentPrice: price,
+      priceChange: change,
+      priceChangePercentage: changePercent,
+      marketCap: price * 1000000000,
       peRatio: 15.5,
-      sector: 'Technology',
-      industry: 'Software',
+      sector: _getSectorForSymbol(symbol),
+      industry: _getIndustryForSymbol(symbol),
+      highPrice: price * 1.02,
+      lowPrice: price * 0.98,
+      openPrice: price - (change / 2),
+      volume: 1000000,
+      lastUpdated: DateTime.now(),
     );
   }
 
+  String _getSectorForSymbol(String symbol) {
+    final sectorMap = {
+      'AAPL': 'Technology',
+      'GOOGL': 'Technology',
+      'MSFT': 'Technology',
+      'AMZN': 'Consumer Cyclical',
+      'META': 'Technology',
+      'TSLA': 'Consumer Cyclical',
+      'NVDA': 'Technology',
+      'JPM': 'Financial Services',
+      'BAC': 'Financial Services',
+      'WMT': 'Consumer Defensive',
+    };
+    return sectorMap[symbol] ?? 'Technology';
+  }
+
+  String _getIndustryForSymbol(String symbol) {
+    final industryMap = {
+      'AAPL': 'Consumer Electronics',
+      'GOOGL': 'Internet Content & Information',
+      'MSFT': 'Software - Infrastructure',
+      'AMZN': 'Internet Retail',
+      'META': 'Internet Content & Information',
+      'TSLA': 'Auto Manufacturers',
+      'NVDA': 'Semiconductors',
+      'JPM': 'Banks - Diversified',
+      'BAC': 'Banks - Diversified',
+      'WMT': 'Discount Stores',
+    };
+    return industryMap[symbol] ?? 'Software';
+  }
+
   List<Stock> _getDemoStocksList(String sector) {
-    return [
-      Stock(
-        symbol: 'DEMO1',
-        companyName: 'Demo Company 1',
-        currentPrice: 100.0,
-        priceChange: 2.5,
-        priceChangePercentage: 2.5,
-        sector: sector,
-        industry: 'Industry 1',
-      ),
-      Stock(
-        symbol: 'DEMO2',
-        companyName: 'Demo Company 2',
-        currentPrice: 200.0,
-        priceChange: -1.5,
-        priceChangePercentage: -0.75,
-        sector: sector,
-        industry: 'Industry 2',
-      ),
-    ];
+    final allStocks = [
+      'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'META',
+      'TSLA', 'NVDA', 'JPM', 'BAC', 'WMT',
+    ].map(_getDemoStock).toList();
+
+    return allStocks.where((stock) => stock.sector == sector).toList();
   }
 
   List<Stock> _getDemoSearchResults(String query) {
-    return [
-      Stock(
-        symbol: 'DEMO',
-        companyName: 'Demo Company ($query)',
-        currentPrice: 150.0,
-        priceChange: 3.5,
-        priceChangePercentage: 2.33,
-        sector: 'Technology',
-        industry: 'Software',
-      ),
+    final allStocks = [
+      'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'META',
+      'TSLA', 'NVDA', 'JPM', 'BAC', 'WMT',
     ];
+
+    query = query.toUpperCase();
+    final matchingStocks = allStocks
+        .where((symbol) => symbol.contains(query) || 
+            _getDemoStock(symbol).companyName.toUpperCase().contains(query))
+        .map(_getDemoStock)
+        .toList();
+
+    return matchingStocks.isEmpty ? [_getDemoStock(query)] : matchingStocks;
   }
 } 

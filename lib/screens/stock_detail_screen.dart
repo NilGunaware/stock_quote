@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/stock.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/stock_view_model.dart';
 
 class StockDetailScreen extends StatelessWidget {
   final Stock stock;
@@ -13,10 +15,45 @@ class StockDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '\$');
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
+    final viewModel = Provider.of<StockViewModel>(context);
+    final isInWatchlist = viewModel.watchlist.any((s) => s.symbol == stock.symbol);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(stock.symbol),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: isInWatchlist ? Colors.amber : null,
+            ),
+            onPressed: () {
+              if (isInWatchlist) {
+                viewModel.removeFromWatchlist(stock);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${stock.symbol} removed from watchlist'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () => viewModel.addToWatchlist(stock),
+                    ),
+                  ),
+                );
+              } else {
+                viewModel.addToWatchlist(stock);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${stock.symbol} added to watchlist'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () => viewModel.removeFromWatchlist(stock),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

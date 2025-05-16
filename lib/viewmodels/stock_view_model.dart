@@ -135,36 +135,52 @@ class StockViewModel extends ChangeNotifier {
     try {
       _setLoading(true);
       final symbols = await _storageService.getWatchlist();
-      _watchlist = [];
+      final List<Stock> newWatchlist = [];
+      final List<String> failedSymbols = [];
+
       for (final symbol in symbols) {
         try {
           final stock = await _stockApiService.getStockQuote(symbol);
-          _watchlist.add(stock);
+          newWatchlist.add(stock);
         } catch (e) {
           debugPrint('Error loading stock $symbol: $e');
+          failedSymbols.add(symbol);
         }
       }
+
+      _watchlist = newWatchlist;
+      
+      if (failedSymbols.isNotEmpty) {
+        _setError('Failed to load some stocks: ${failedSymbols.join(", ")}');
+      } else {
+        _clearError();
+      }
+      
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError('Failed to load watchlist: ${e.toString()}');
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> refreshWatchlist() async {
+    if (_isLoading) return; // Prevent multiple simultaneous refreshes
     await _loadWatchlist();
   }
 
   Future<void> addToWatchlist(Stock stock) async {
     try {
-      await _storageService.addToWatchlist(stock.symbol);
-      if (!_watchlist.any((s) => s.symbol == stock.symbol)) {
-        _watchlist.add(stock);
-        notifyListeners();
+      if (_watchlist.any((s) => s.symbol == stock.symbol)) {
+        return; // Stock already in watchlist
       }
+
+      await _storageService.addToWatchlist(stock.symbol);
+      _watchlist.add(stock);
+      _clearError();
+      notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError('Failed to add ${stock.symbol} to watchlist: ${e.toString()}');
     }
   }
 
@@ -172,9 +188,10 @@ class StockViewModel extends ChangeNotifier {
     try {
       await _storageService.removeFromWatchlist(stock.symbol);
       _watchlist.removeWhere((s) => s.symbol == stock.symbol);
+      _clearError();
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError('Failed to remove ${stock.symbol} from watchlist: ${e.toString()}');
     }
   }
 

@@ -67,6 +67,19 @@ class WatchlistScreen extends StatelessWidget {
                   },
                   child: StockListItem(
                     stock: stock,
+                    isInWatchlist: true,
+                    onWatchlistToggle: () {
+                      viewModel.removeFromWatchlist(stock);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${stock.symbol} removed from watchlist'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () => viewModel.addToWatchlist(stock),
+                          ),
+                        ),
+                      );
+                    },
                     onTap: () => Navigator.pushNamed(
                       context,
                       '/stock_detail',

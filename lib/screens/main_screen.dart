@@ -38,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.search),
-            label: 'Search',
+            label: 'Stock',
           ),
           NavigationDestination(
             icon: Icon(Icons.star_border),

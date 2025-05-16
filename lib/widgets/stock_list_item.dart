@@ -43,10 +43,17 @@ class StockListItem extends StatelessWidget {
                         ),
                         if (onWatchlistToggle != null) ...[
                           const SizedBox(width: 8),
-                          Icon(
-                            isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: isInWatchlist ? Colors.amber : AppTheme.subtitleColor,
-                            size: 20,
+                          GestureDetector(
+                            onTap: onWatchlistToggle,
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Icon(
+                                isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: isInWatchlist ? Colors.amber : AppTheme.subtitleColor,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ],
                       ],
