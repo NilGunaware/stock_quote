@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/stock_view_model.dart';
+import '../viewmodels/header_view_model.dart';
 import '../widgets/stock_list_item.dart';
 import '../widgets/stock_shimmer.dart';
+import '../widgets/header_widget.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -40,6 +42,14 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
   void _onSearchChanged(String query, StockViewModel viewModel) {
     viewModel.searchStocks(query);
   }
@@ -62,26 +72,7 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Stocks',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'December ${DateTime.now().day}',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        title: const HeaderWidget(),
       ),
       body: Column(
         children: [

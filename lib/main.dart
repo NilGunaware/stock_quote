@@ -8,6 +8,9 @@ import 'services/storage_service.dart';
 import 'viewmodels/stock_view_model.dart';
 import 'models/stock.dart';
 import 'theme/app_theme.dart';
+import 'viewmodels/header_view_model.dart';
+import 'services/date_service.dart';
+import 'screens/search_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +29,9 @@ void main() async {
             context.read<StockApiService>(),
             context.read<StorageService>(),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HeaderViewModel(DateService()),
         ),
       ],
       child: const MyApp(),
