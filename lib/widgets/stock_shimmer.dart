@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../theme/app_theme.dart';
 
 class StockShimmer extends StatelessWidget {
   const StockShimmer({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: AppTheme.cardColor,
-      highlightColor: AppTheme.cardColor.withOpacity(0.5),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 10,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    return ListView.builder(
+      itemCount: 10,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[900]!,
+            highlightColor: Colors.grey[800]!,
+            period: const Duration(milliseconds: 2000), // Increased shimmer duration
             child: Container(
+              height: 80,
               padding: const EdgeInsets.all(16.0),
-              height: 88, // Increased height to accommodate content
-              decoration: AppTheme.stockItemDecoration,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[900]!,
+                  width: 1,
+                ),
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Column(
@@ -34,54 +37,51 @@ class StockShimmer extends StatelessWidget {
                           width: 80,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: AppTheme.textColor,
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          width: 140,
+                          width: 120,
                           height: 16,
                           decoration: BoxDecoration(
-                            color: AppTheme.textColor,
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(
-                    width: 80,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: AppTheme.textColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 60,
-                          height: 20, // Reduced height
-                          decoration: BoxDecoration(
-                            color: AppTheme.textColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 60,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 } 

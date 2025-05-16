@@ -45,6 +45,9 @@ class StockViewModel extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      // Start a timer for minimum loading time
+      final minimumLoadingTimer = Future.delayed(const Duration(seconds: 2));
+
       List<Stock> allStocks = [];
       for (String symbol in _defaultSymbols) {
         try {
@@ -54,6 +57,12 @@ class StockViewModel extends ChangeNotifier {
           debugPrint('Error loading stock $symbol: $e');
         }
       }
+
+      // Wait for both the data loading and minimum timer
+      await Future.wait([
+        Future.value(allStocks),
+        minimumLoadingTimer,
+      ]);
 
       _allSearchResults = allStocks;
       _searchResults = _allSearchResults.take(_pageSize).toList();
@@ -94,7 +103,19 @@ class StockViewModel extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      _allSearchResults = await _repository.searchStocks(query);
+
+      // Start a timer for minimum loading time
+      final minimumLoadingTimer = Future.delayed(const Duration(seconds: 2));
+
+      final stocksFuture = _repository.searchStocks(query);
+
+      // Wait for both the API call and minimum timer
+      final results = await Future.wait([
+        stocksFuture,
+        minimumLoadingTimer,
+      ]);
+
+      _allSearchResults = results[0] as List<Stock>;
       _searchResults = _allSearchResults.take(_pageSize).toList();
       notifyListeners();
     } catch (e) {
