@@ -142,26 +142,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           onWatchlistToggle: () {
                             if (isInWatchlist) {
                               viewModel.removeFromWatchlist(stock);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${stock.symbol} removed from watchlist'),
-                                  action: SnackBarAction(
-                                    label: 'Undo',
-                                    onPressed: () => viewModel.addToWatchlist(stock),
-                                  ),
-                                ),
-                              );
                             } else {
                               viewModel.addToWatchlist(stock);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${stock.symbol} added to watchlist'),
-                                  action: SnackBarAction(
-                                    label: 'Undo',
-                                    onPressed: () => viewModel.removeFromWatchlist(stock),
-                                  ),
-                                ),
-                              );
                             }
                           },
                           onTap: () => Navigator.pushNamed(
@@ -178,6 +160,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         right: 0,
                         bottom: 0,
                         child: Container(
+                          height: 200,
                           color: Colors.black.withOpacity(0.7),
                           child: const StockShimmer(),
                         ),

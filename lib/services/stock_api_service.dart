@@ -12,6 +12,28 @@ class StockApiService {
 
   StockApiService() {
     debugPrint('StockApiService initialized with demo API key');
+    _setupDio();
+  }
+
+  void _setupDio() {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onError: (DioException error, handler) {
+        debugPrint('API Error: ${error.message}');
+        return handler.next(error);
+      },
+      onResponse: (Response response, handler) {
+        if (response.data == null) {
+          debugPrint('Empty response received');
+          return handler.reject(
+            DioException(
+              requestOptions: response.requestOptions,
+              error: 'Empty response received',
+            ),
+          );
+        }
+        return handler.next(response);
+      },
+    ));
   }
 
   Future<Stock> getStockQuote(String symbol) async {
@@ -28,51 +50,76 @@ class StockApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data.containsKey('Time Series (5min)') && data.containsKey('Meta Data')) {
-          // Get the most recent quote from Time Series
-          final timeSeries = data['Time Series (5min)'] as Map<String, dynamic>;
-          final latestTime = timeSeries.keys.first;
-          final quote = timeSeries[latestTime];
-
-          // Get metadata
-          final metaData = data['Meta Data'];
-          final stockSymbol = metaData['2. Symbol'] ?? symbol;
-
-          // Parse price data
-          final currentPrice = double.parse(quote['4. close']);
-          final openPrice = double.parse(quote['1. open']);
-          final highPrice = double.parse(quote['2. high']);
-          final lowPrice = double.parse(quote['3. low']);
-          final volume = int.parse(quote['5. volume']);
-
-          // Calculate price change
-          final priceChange = currentPrice - openPrice;
-          final priceChangePercentage = (priceChange / openPrice) * 100;
-
-          return Stock(
-            symbol: stockSymbol,
-            companyName: '$stockSymbol Stock',
-            currentPrice: currentPrice,
-            priceChange: priceChange,
-            priceChangePercentage: priceChangePercentage,
-            marketCap: 0, // Not available in this endpoint
-            peRatio: 0, // Not available in this endpoint
-            sector: 'Technology', // Not available in this endpoint
-            industry: 'Technology', // Not available in this endpoint
-            highPrice: highPrice,
-            lowPrice: lowPrice,
-            openPrice: openPrice,
-            volume: volume,
-            lastUpdated: DateTime.parse(latestTime),
-          );
+        
+        // Check for API error messages
+        if (data is Map<String, dynamic> && data.containsKey('Error Message')) {
+          debugPrint('API Error: ${data['Error Message']}');
+          return _getDemoStock(symbol);
         }
-        debugPrint('Invalid response format: missing required data');
+
+        // Check for rate limit
+        if (data is Map<String, dynamic> && data.containsKey('Note')) {
+          debugPrint('API Rate Limit: ${data['Note']}');
+          return _getDemoStock(symbol);
+        }
+
+        if (data is Map<String, dynamic> && 
+            data.containsKey('Time Series (5min)') && 
+            data.containsKey('Meta Data')) {
+          try {
+            // Get the most recent quote from Time Series
+            final timeSeries = data['Time Series (5min)'] as Map<String, dynamic>;
+            if (timeSeries.isEmpty) {
+              debugPrint('Empty time series data for symbol: $symbol');
+              return _getDemoStock(symbol);
+            }
+
+            final latestTime = timeSeries.keys.first;
+            final quote = timeSeries[latestTime];
+
+            // Get metadata
+            final metaData = data['Meta Data'];
+            final stockSymbol = metaData['2. Symbol'] ?? symbol;
+
+            // Parse price data with null safety
+            final currentPrice = double.tryParse(quote['4. close'] ?? '') ?? 0.0;
+            final openPrice = double.tryParse(quote['1. open'] ?? '') ?? 0.0;
+            final highPrice = double.tryParse(quote['2. high'] ?? '') ?? 0.0;
+            final lowPrice = double.tryParse(quote['3. low'] ?? '') ?? 0.0;
+            final volume = int.tryParse(quote['5. volume'] ?? '') ?? 0;
+
+            // Calculate price change with null safety
+            final priceChange = currentPrice - openPrice;
+            final priceChangePercentage = openPrice != 0 ? (priceChange / openPrice) * 100 : 0.0;
+
+            return Stock(
+              symbol: stockSymbol,
+              companyName: '$stockSymbol Stock',
+              currentPrice: currentPrice,
+              priceChange: priceChange,
+              priceChangePercentage: priceChangePercentage,
+              marketCap: 0,
+              peRatio: 0,
+              sector: _getSectorForSymbol(stockSymbol),
+              industry: _getIndustryForSymbol(stockSymbol),
+              highPrice: highPrice,
+              lowPrice: lowPrice,
+              openPrice: openPrice,
+              volume: volume,
+              lastUpdated: DateTime.tryParse(latestTime) ?? DateTime.now(),
+            );
+          } catch (e) {
+            debugPrint('Error parsing stock data for $symbol: $e');
+            return _getDemoStock(symbol);
+          }
+        }
+        debugPrint('Invalid response format for $symbol: missing required data');
         return _getDemoStock(symbol);
       }
       debugPrint('Failed to load stock data: status code ${response.statusCode}');
       return _getDemoStock(symbol);
     } catch (e) {
-      debugPrint('Error fetching stock data: $e');
+      debugPrint('Error fetching stock data for $symbol: $e');
       return _getDemoStock(symbol);
     }
   }
