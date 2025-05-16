@@ -36,6 +36,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         destinations: const [
+          //bottom bar
           NavigationDestination(
             icon: Icon(Icons.home),
             label: 'Stock',

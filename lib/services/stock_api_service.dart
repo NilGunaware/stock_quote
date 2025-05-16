@@ -1,13 +1,11 @@
-import 'dart:convert';
-import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../models/stock.dart';
+ import 'package:dio/dio.dart';
+ import '../models/stock.dart';
 import 'package:flutter/foundation.dart';
 
 class StockApiService {
   final Dio _dio = Dio();
   final String _baseUrl = 'https://www.alphavantage.co/query';
-  final String _apiKey = 'demo'; // Using the demo API key
+  final String _apiKey = 'demo';
   bool _isDemo = true;
 
   StockApiService() {
@@ -49,10 +47,10 @@ class StockApiService {
       );
 
       if (response.statusCode == 200) {
+        print("Nil testing");
         final data = response.data;
-        
-        // Check for API error messages
-        if (data is Map<String, dynamic> && data.containsKey('Error Message')) {
+        print("Nil testing and ${data}");
+         if (data is Map<String, dynamic> && data.containsKey('Error Message')) {
           debugPrint('API Error: ${data['Error Message']}');
           return _getDemoStock(symbol);
         }

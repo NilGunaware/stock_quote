@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/stock.dart';
-import '../services/stock_api_service.dart';
-import '../services/storage_service.dart';
+import '../repositories/stock_repository.dart';
 
 class StockViewModel extends ChangeNotifier {
-  final StockApiService _stockApiService;
-  final StorageService _storageService;
+  final StockRepository _repository;
   
   List<Stock> _searchResults = [];
   List<Stock> _watchlist = [];
@@ -25,14 +23,12 @@ class StockViewModel extends ChangeNotifier {
   final List<String> _defaultSymbols = [
     'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'META',
     'TSLA', 'NVDA', 'JPM', 'BAC', 'WMT',
-    'JNJ', 'PG', 'XOM', 'V', 'MA',
-    'DIS', 'NFLX', 'INTC', 'AMD', 'CSCO'
   ];
 
-  StockViewModel(this._stockApiService, this._storageService) {
+  StockViewModel(this._repository) {
     _loadWatchlist();
     startAutoRefresh();
-    loadAllStocks(); // Load all stocks when initialized
+    loadAllStocks();
   }
 
   // Getters
@@ -52,7 +48,7 @@ class StockViewModel extends ChangeNotifier {
       List<Stock> allStocks = [];
       for (String symbol in _defaultSymbols) {
         try {
-          final stock = await _stockApiService.getStockQuote(symbol);
+          final stock = await _repository.getStockQuote(symbol);
           allStocks.add(stock);
         } catch (e) {
           debugPrint('Error loading stock $symbol: $e');
@@ -85,7 +81,7 @@ class StockViewModel extends ChangeNotifier {
   // Search functionality
   Future<void> searchStocks(String query) async {
     if (query.isEmpty) {
-      loadAllStocks(); // Reset to show all stocks
+      loadAllStocks();
       return;
     }
 
@@ -98,7 +94,7 @@ class StockViewModel extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      _allSearchResults = await _stockApiService.searchStocks(query);
+      _allSearchResults = await _repository.searchStocks(query);
       _searchResults = _allSearchResults.take(_pageSize).toList();
       notifyListeners();
     } catch (e) {
@@ -115,7 +111,7 @@ class StockViewModel extends ChangeNotifier {
       _isLoadingMore = true;
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+      await Future.delayed(const Duration(milliseconds: 500));
       
       final currentLength = _searchResults.length;
       final nextBatch = _allSearchResults
@@ -134,77 +130,61 @@ class StockViewModel extends ChangeNotifier {
   Future<void> _loadWatchlist() async {
     try {
       _setLoading(true);
-      final symbols = await _storageService.getWatchlist();
-      final List<Stock> newWatchlist = [];
-      final List<String> failedSymbols = [];
-
-      for (final symbol in symbols) {
-        try {
-          final stock = await _stockApiService.getStockQuote(symbol);
-          newWatchlist.add(stock);
-        } catch (e) {
-          debugPrint('Error loading stock $symbol: $e');
-          failedSymbols.add(symbol);
-        }
-      }
-
-      _watchlist = newWatchlist;
+      final symbols = await _repository.getWatchlist();
+      _watchlist = [];
       
-      if (failedSymbols.isNotEmpty) {
-        _setError('Failed to load some stocks: ${failedSymbols.join(", ")}');
-      } else {
-        _clearError();
+      for (var symbol in symbols) {
+        try {
+          final stock = await _repository.getStockQuote(symbol);
+          _watchlist.add(stock);
+        } catch (e) {
+          debugPrint('Error loading watchlist stock $symbol: $e');
+        }
       }
       
       notifyListeners();
     } catch (e) {
-      _setError('Failed to load watchlist: ${e.toString()}');
+      _setError('Failed to load watchlist: $e');
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> refreshWatchlist() async {
-    if (_isLoading) return; // Prevent multiple simultaneous refreshes
-    await _loadWatchlist();
+    final currentSymbols = _watchlist.map((s) => s.symbol).toList();
+    for (var symbol in currentSymbols) {
+      try {
+        final updatedStock = await _repository.getStockQuote(symbol);
+        final index = _watchlist.indexWhere((s) => s.symbol == symbol);
+        if (index != -1) {
+          _watchlist[index] = updatedStock;
+        }
+      } catch (e) {
+        debugPrint('Error refreshing stock $symbol: $e');
+      }
+    }
+    notifyListeners();
   }
 
   Future<void> addToWatchlist(Stock stock) async {
     try {
-      if (_watchlist.any((s) => s.symbol == stock.symbol)) {
-        return; // Stock already in watchlist
+      await _repository.addToWatchlist(stock);
+      if (!_watchlist.any((s) => s.symbol == stock.symbol)) {
+        _watchlist.add(stock);
+        notifyListeners();
       }
-
-      await _storageService.addToWatchlist(stock.symbol);
-      _watchlist.add(stock);
-      _clearError();
-      notifyListeners();
     } catch (e) {
-      _setError('Failed to add ${stock.symbol} to watchlist: ${e.toString()}');
+      _setError('Failed to add to watchlist: $e');
     }
   }
 
   Future<void> removeFromWatchlist(Stock stock) async {
     try {
-      await _storageService.removeFromWatchlist(stock.symbol);
+      await _repository.removeFromWatchlist(stock.symbol);
       _watchlist.removeWhere((s) => s.symbol == stock.symbol);
-      _clearError();
       notifyListeners();
     } catch (e) {
-      _setError('Failed to remove ${stock.symbol} from watchlist: ${e.toString()}');
-    }
-  }
-
-  // Sector functionality
-  Future<List<Stock>> getStocksByIndustry(String sector) async {
-    try {
-      if (_error != null) {
-        _error = null;
-      }
-      return await _stockApiService.getStocksByIndustry(sector);
-    } catch (e) {
-      _error = e.toString();
-      return [];
+      _setError('Failed to remove from watchlist: $e');
     }
   }
 
@@ -230,12 +210,8 @@ class StockViewModel extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final stocks = await _stockApiService.getStocksByIndustry(sector);
+      final stocks = await _repository.getStocksByIndustry(sector);
       sectorStocks[sector] = stocks;
-
-      for (var stock in stocks) {
-        await _storageService.cacheStockData(stock);
-      }
     } catch (e) {
       _error = 'Failed to load sector stocks: $e';
       sectorStocks[sector] = [];

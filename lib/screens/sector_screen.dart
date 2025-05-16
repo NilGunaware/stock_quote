@@ -26,13 +26,7 @@ class _SectorScreenState extends State<SectorScreen> {
     'Communication Services',
   ];
 
-  Map<String, Future<List<Stock>>?> _sectorFutures = {};
-
-  void _loadSectorStocks(String sector, StockViewModel viewModel) {
-    setState(() {
-      _sectorFutures[sector] = viewModel.getStocksByIndustry(sector);
-    });
-  }
+  Map<String, bool> _loadedSectors = {};
 
   @override
   Widget build(BuildContext context) {
@@ -50,71 +44,63 @@ class _SectorScreenState extends State<SectorScreen> {
                 title: Text(sector),
                 leading: const Icon(Icons.business),
                 onExpansionChanged: (expanded) {
-                  if (expanded && _sectorFutures[sector] == null) {
-                    _loadSectorStocks(sector, viewModel);
+                  if (expanded && !_loadedSectors[sector]!) {
+                    setState(() {
+                      _loadedSectors[sector] = true;
+                    });
+                    viewModel.loadSectorStocks(sector);
                   }
                 },
                 children: [
-                  if (_sectorFutures[sector] != null)
-                    FutureBuilder<List<Stock>>(
-                      future: _sectorFutures[sector],
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              'Error: ${snapshot.error}',
-                              style: const TextStyle(color: Colors.red),
+                  if (_loadedSectors[sector] == true)
+                    if (viewModel.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (viewModel.error != null)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error: ${viewModel.error}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      )
+                    else if (viewModel.sectorStocks[sector]?.isEmpty ?? true)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('No stocks found in this sector'),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: viewModel.sectorStocks[sector]?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          final stock = viewModel.sectorStocks[sector]![index];
+                          return StockListItem(
+                            stock: stock,
+                            isInWatchlist: viewModel.watchlist.any(
+                              (s) => s.symbol == stock.symbol,
+                            ),
+                            onWatchlistToggle: () {
+                              final isInWatchlist = viewModel.watchlist.any(
+                                (s) => s.symbol == stock.symbol,
+                              );
+                              if (isInWatchlist) {
+                                viewModel.removeFromWatchlist(stock);
+                              } else {
+                                viewModel.addToWatchlist(stock);
+                              }
+                            },
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/stock_detail',
+                              arguments: stock,
                             ),
                           );
-                        }
-
-                        final stocks = snapshot.data ?? [];
-                        if (stocks.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text('No stocks found in this sector'),
-                          );
-                        }
-
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: stocks.length,
-                          itemBuilder: (context, index) {
-                            final stock = stocks[index];
-                            return StockListItem(
-                              stock: stock,
-                              isInWatchlist: viewModel.watchlist.any(
-                                (s) => s.symbol == stock.symbol,
-                              ),
-                              onWatchlistToggle: () {
-                                final isInWatchlist = viewModel.watchlist.any(
-                                  (s) => s.symbol == stock.symbol,
-                                );
-                                if (isInWatchlist) {
-                                  viewModel.removeFromWatchlist(stock);
-                                } else {
-                                  viewModel.addToWatchlist(stock);
-                                }
-                              },
-                              onTap: () => Navigator.pushNamed(
-                                context,
-                                '/stock_detail',
-                                arguments: stock,
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                        },
+                      ),
                 ],
               );
             },
@@ -122,5 +108,11 @@ class _SectorScreenState extends State<SectorScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadedSectors = {for (var sector in sectors) sector: false};
   }
 } 

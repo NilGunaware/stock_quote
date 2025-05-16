@@ -10,7 +10,7 @@ import 'models/stock.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/header_view_model.dart';
 import 'services/date_service.dart';
-import 'screens/search_screen.dart';
+import 'repositories/stock_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,20 +18,30 @@ void main() async {
   // Initialize services
   final storageService = await StorageService.initialize();
   final stockApiService = StockApiService();
+  final dateService = DateService();
+
+  // Initialize repository
+  final stockRepository = StockRepository(stockApiService, storageService);
 
   runApp(
     MultiProvider(
       providers: [
+        // Services
         Provider<StorageService>(create: (_) => storageService),
         Provider<StockApiService>(create: (_) => stockApiService),
+        Provider<DateService>(create: (_) => dateService),
+        
+        // Repositories
+        Provider<StockRepository>(create: (_) => stockRepository),
+        
+        // ViewModels
         ChangeNotifierProvider(
           create: (context) => StockViewModel(
-            context.read<StockApiService>(),
-            context.read<StorageService>(),
+            context.read<StockRepository>(),
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => HeaderViewModel(DateService()),
+          create: (_) => HeaderViewModel(dateService),
         ),
       ],
       child: const MyApp(),

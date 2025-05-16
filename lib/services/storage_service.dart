@@ -3,14 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/stock.dart';
 
 class StorageService {
-  final SharedPreferences _prefs;
   static const String _watchlistKey = 'watchlist';
+  static const String _stockCachePrefix = 'stock_cache_';
+  final SharedPreferences _prefs;
 
-  StorageService(this._prefs);
+  StorageService._(this._prefs);
 
   static Future<StorageService> initialize() async {
     final prefs = await SharedPreferences.getInstance();
-    return StorageService(prefs);
+    return StorageService._(prefs);
   }
 
   Future<List<String>> getWatchlist() async {
@@ -32,22 +33,53 @@ class StorageService {
   }
 
   Future<void> cacheStockData(Stock stock) async {
-    final String key = 'stock_${stock.symbol}';
-    await _prefs.setString(key, jsonEncode(stock.toJson()));
+    final key = _stockCachePrefix + stock.symbol;
+    final stockData = jsonEncode(stock.toJson());
+    await _prefs.setString(key, stockData);
   }
 
-  Future<Stock?> getCachedStockData(String symbol) async {
-    final String key = 'stock_${symbol}';
-    final String? data = _prefs.getString(key);
-    if (data != null) {
-      return Stock.fromJson(jsonDecode(data));
+  Future<Stock?> getCachedStock(String symbol) async {
+    final key = _stockCachePrefix + symbol;
+    final stockData = _prefs.getString(key);
+    if (stockData != null) {
+      try {
+        final Map<String, dynamic> json = jsonDecode(stockData);
+        return Stock.fromJson(json);
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }
 
+  Future<List<Stock>> getCachedStocks() async {
+    final List<Stock> stocks = [];
+    final allKeys = _prefs.getKeys();
+    
+    for (final key in allKeys) {
+      if (key.startsWith(_stockCachePrefix)) {
+        final stockData = _prefs.getString(key);
+        if (stockData != null) {
+          try {
+            final Map<String, dynamic> json = jsonDecode(stockData);
+            stocks.add(Stock.fromJson(json));
+          } catch (e) {
+            // Skip invalid cache entries
+            continue;
+          }
+        }
+      }
+    }
+    
+    return stocks;
+  }
+
   Future<void> clearCache() async {
-    final List<String> watchlist = await getWatchlist();
-    await _prefs.clear();
-    await _prefs.setStringList(_watchlistKey, watchlist);
+    final allKeys = _prefs.getKeys();
+    for (final key in allKeys) {
+      if (key.startsWith(_stockCachePrefix)) {
+        await _prefs.remove(key);
+      }
+    }
   }
 } 
